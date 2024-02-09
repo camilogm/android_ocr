@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_margin="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Spinner
+                android:id="@+id/scanOptions"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:entries="@array/scanner_options" />
+
+            <Button
+                android:id="@+id/scanPassportButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="Scan " />
+
+            <Button
+                android:id="@+id/uploadImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="Upload Image" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/scannedTextView"
+            android:layout_width="255dp"
+            android:layout_height="200dp"
+            android:padding="16dp"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_marginTop="50dp"
+        android:layout_width="400dp"
+        android:layout_height="350dp"
+        android:layout_centerInParent="true"
+     />
+
+
+</LinearLayout>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="scanner_options">
+        <item>Passport</item>
+        <item>American VISA</item>
+        <item>Credit Card</item>
+        <item>INE</item>
+    </string-array>
+</resources>
