@@ -5,39 +5,77 @@ import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
-import android.graphics.Color
+import android.util.Log
 
 object BitmapUtils {
 
-    fun applyTopHat(grayBitmap: Bitmap, kernelWidth: Int = 9, kernelHeight: Int = 3): Bitmap {
-        val topHatBitmap = Bitmap.createBitmap(grayBitmap.width, grayBitmap.height, Bitmap.Config.RGB_565)
+    private const val TAG = "SCAN_OCR"
 
-        val halfKernelWidth = kernelWidth / 2
-        val halfKernelHeight = kernelHeight / 2
+    private fun applyHistogramEqualization(grayscaleBitmap: Bitmap): Bitmap {
+        Log.d(TAG, "Starting histogram")
+        val pixels = IntArray(grayscaleBitmap.width * grayscaleBitmap.height)
+        grayscaleBitmap.getPixels(
+            pixels,
+            0,
+            grayscaleBitmap.width,
+            0,
+            0,
+            grayscaleBitmap.width,
+            grayscaleBitmap.height
+        )
 
-        for (x in halfKernelWidth until grayBitmap.width - halfKernelWidth) {
-            for (y in halfKernelHeight until grayBitmap.height - halfKernelHeight) {
-                var maxPixelValue = 0
-
-                // Perform max operation within the kernel
-                for (i in -halfKernelWidth..halfKernelWidth) {
-                    for (j in -halfKernelHeight..halfKernelHeight) {
-                        val pixelValue = grayBitmap.getPixel(x + i, y + j) and 0xFF // Extract the grayscale value
-                        maxPixelValue = maxOf(maxPixelValue, pixelValue)
-                    }
-                }
-
-                // Compute top hat result
-                val topHatValue = maxPixelValue - (grayBitmap.getPixel(x, y) and 0xFF) // Extract the grayscale value
-
-                // Set the top hat result to the output bitmap
-                topHatBitmap.setPixel(x, y, Color.rgb(topHatValue, topHatValue, topHatValue))
-            }
+        // Compute histogram
+        val histogram = IntArray(256)
+        for (pixel in pixels) {
+            val grayValue = pixel shr 16 and 0xff // Extracting red component assuming grayscale
+            histogram[grayValue]++
         }
 
-        return topHatBitmap
+        // Compute cumulative histogram
+        val cumulativeHistogram = IntArray(256)
+        cumulativeHistogram[0] = histogram[0]
+        for (i in 1..255) {
+            cumulativeHistogram[i] = cumulativeHistogram[i - 1] + histogram[i]
+        }
+
+        // Normalize cumulative histogram
+        val totalPixels = grayscaleBitmap.width * grayscaleBitmap.height
+        val normalizedHistogram = IntArray(256)
+        for (i in 0..255) {
+            normalizedHistogram[i] =
+                Math.round(cumulativeHistogram[i] * 255.0 / totalPixels).toInt()
+        }
+
+        // Apply histogram equalization
+        for (i in pixels.indices) {
+            val grayValue = pixels[i] shr 16 and 0xff
+            val equalizedValue = normalizedHistogram[grayValue]
+            pixels[i] =
+                0xFF shl 24 or (equalizedValue shl 16) or (equalizedValue shl 8) or equalizedValue
+        }
+
+        // Create new bitmap with equalized histogram
+        val equalizedBitmap = Bitmap.createBitmap(
+            grayscaleBitmap.width,
+            grayscaleBitmap.height,
+            Bitmap.Config.RGB_565
+        )
+        equalizedBitmap.setPixels(
+            pixels,
+            0,
+            grayscaleBitmap.width,
+            0,
+            0,
+            grayscaleBitmap.width,
+            grayscaleBitmap.height
+        )
+
+        Log.d(TAG, "finished histogram")
+        return equalizedBitmap
     }
-    fun convertImageToGrayScale(bmpOriginal: Bitmap): Bitmap {
+
+    private fun applyGrayScale(bmpOriginal: Bitmap): Bitmap {
+        Log.d(TAG, "starting conversion gray scale")
         val width: Int  = bmpOriginal.width
         val height: Int =  bmpOriginal.height
 
@@ -51,14 +89,15 @@ object BitmapUtils {
         val f = ColorMatrixColorFilter(cm)
         paint.colorFilter = f
         c.drawBitmap(bmpOriginal, 0f, 0f, paint)
+        Log.d(TAG, "finished gray scale conversion")
         return bmpGrayscale
     }
 
     fun optimizeBitImage(step: Int, bitmap: Bitmap): Bitmap {
         return when (step) {
             0 -> bitmap //no conversion
-            1 -> convertImageToGrayScale(bitmap) // only grayscale
-            2 -> applyTopHat(convertImageToGrayScale(bitmap))
+            1 -> applyGrayScale(bitmap) // only grayscale
+            2 -> applyHistogramEqualization(applyGrayScale(bitmap))
             else -> bitmap
         }
     }

@@ -4,7 +4,9 @@ package com.example.test_ocr_reader
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -21,6 +23,8 @@ import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptio
 import com.google.firebase.ml.vision.text.FirebaseVisionText
 import android.widget.ImageView
 import android.widget.Spinner
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.example.test_ocr_reader.scanner.BitmapUtils
 import com.example.test_ocr_reader.scanner.CreditCardScanner
@@ -46,12 +50,12 @@ class PassportScannerActivity : ComponentActivity() {
     }
 
     private lateinit var scanPassportButton: Button
-    private lateinit var imageView: ImageView
-
-
-    private lateinit var scannedTextView: TextView
     private lateinit var uploadImageButton: Button
+    private lateinit var imageView: ImageView
+    private lateinit var scannedTextView: TextView
+
     private var selectedSpinnerItem: String? = null
+    private lateinit var takePictureLauncher: ActivityResultLauncher<Intent>
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,6 +79,24 @@ class PassportScannerActivity : ComponentActivity() {
 
 
         setupSpinner()
+
+        // Initialize ActivityResultLauncher
+        takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.extras?.get("data")?.let { image ->
+                    if (image is Bitmap) {
+                        lifecycleScope.launch {
+                            try {
+                                processImage(image)
+                            } catch (e: Exception) {
+                                Log.e(TAG, e.toString())
+                            }
+                        }
+                    }
+                }
+            } else {
+            }
+        }
     }
 
     private fun setupSpinner() {
@@ -91,53 +113,39 @@ class PassportScannerActivity : ComponentActivity() {
         }
     }
 
+    private suspend fun getBitmapFromUri(uri: Uri): Bitmap = withContext(Dispatchers.IO) {
+        // Use content resolver to load bitmap from URI
+        val inputStream = contentResolver.openInputStream(uri)
+        BitmapFactory.decodeStream(inputStream)
+    }
     private fun dispatchTakePictureIntent() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
-            takePictureIntent.resolveActivity(packageManager)?.also {
-                startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-            }
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        takePictureIntent.resolveActivity(packageManager)?.let {
+            takePictureLauncher.launch(takePictureIntent)
         }
     }
 
-    private fun openGallery() {
-        val intent = Intent()
-        intent.type = "image/*"
-        intent.action = Intent.ACTION_GET_CONTENT
-        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST)
-    }
 
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
-            val imageBitmap = data?.extras?.get("data") as Bitmap
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { selectedImageUri ->
+            imageView.setImageURI(selectedImageUri)
+            // Get the bitmap from the URI asynchronously
             lifecycleScope.launch {
                 try {
-                    processImage(imageBitmap)
+                    val bitmap = getBitmapFromUri(selectedImageUri)
+                    processImage(bitmap)
                 } catch (e: Exception) {
                     Log.e(TAG, e.toString())
                 }
             }
         }
-
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK && data != null && data.data != null) {
-            val selectedImageUri = data.data
-            imageView.setImageURI(selectedImageUri)
-            imageView.drawable?.let { drawable ->
-                if (drawable is BitmapDrawable) {
-                    val bitmap = drawable.bitmap
-                    lifecycleScope.launch{
-                        try {
-                            processImage(bitmap)
-                        } catch (e: Exception) {
-                            Log.e(TAG, e.toString())
-                        }
-                    }
-                }
-            }
-        }
     }
+
+    private fun openGallery() {
+        pickImageLauncher.launch("image/*")
+    }
+
+
 
     private suspend fun performTextRecognition(firebaseVisionImage: FirebaseVisionImage): FirebaseVisionText {
         return withContext(Dispatchers.IO) {
@@ -155,8 +163,9 @@ class PassportScannerActivity : ComponentActivity() {
     }
 
     private suspend fun processImage(bitmap: Bitmap) {
-        val optimizedGrayScale = BitmapUtils.optimizeBitImage(1 , bitmap)
+        val optimizedGrayScale = BitmapUtils.optimizeBitImage(2 , bitmap)
 
+        imageView.setImageBitmap(optimizedGrayScale)
         val firebaseVisionImage = FirebaseVisionImage.fromBitmap(optimizedGrayScale)
         val visionText = performTextRecognition(firebaseVisionImage)
 
