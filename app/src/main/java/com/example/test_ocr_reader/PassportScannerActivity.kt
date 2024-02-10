@@ -22,6 +22,7 @@ import com.google.firebase.ml.vision.text.FirebaseVisionText
 import android.widget.ImageView
 import android.widget.Spinner
 import androidx.lifecycle.lifecycleScope
+import com.example.test_ocr_reader.scanner.BitmapUtils
 import com.example.test_ocr_reader.scanner.CreditCardScanner
 import com.example.test_ocr_reader.scanner.PassportScanner
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +84,7 @@ class PassportScannerActivity : ComponentActivity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedSpinnerItem = options[position]
+                scannedTextView.text = ""
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
@@ -153,10 +155,12 @@ class PassportScannerActivity : ComponentActivity() {
     }
 
     private suspend fun processImage(bitmap: Bitmap) {
-        val firebaseVisionImage = FirebaseVisionImage.fromBitmap(bitmap)
+        val optimizedGrayScale = BitmapUtils.optimizeBitImage(1 , bitmap)
+
+        val firebaseVisionImage = FirebaseVisionImage.fromBitmap(optimizedGrayScale)
         val visionText = performTextRecognition(firebaseVisionImage)
 
-        Log.d(TAG, "scanning ${selectedSpinnerItem}")
+        Log.d(TAG, "scanning $selectedSpinnerItem")
 
         val result = when  {
             selectedSpinnerItem == SCAN_TYPES.PASSPORT.scanType -> PassportScanner().processMrz(visionText)

@@ -36,13 +36,13 @@ class PassportScanner {
             val documentNumber = line2.substring(0, 9).replace("O", "0")
             val dateOfBirthDay = line2.substring(13, 19)
             val expiryDate = line2.substring(21, 27)
-            val expiditionCountry = line1.substring(2, 5)
+            val expeditionCountry: String = line1.substring(2, 5)
 
             Log.d(
                 TAG,
                 "Scanned Text Buffer Passport ->>>> Doc Number: $documentNumber DateOfBirth: $dateOfBirthDay ExpiryDate: $expiryDate"
             )
-            Passport(documentNumber, dateFormat.parse(dateOfBirthDay), dateFormat.parse(expiryDate), expiditionCountry)
+            Passport(documentNumber, dateFormat.parse(dateOfBirthDay), dateFormat.parse(expiryDate), expeditionCountry)
         } else {
             Log.d(TAG, "empty")
             null
