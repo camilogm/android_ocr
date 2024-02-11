@@ -9,6 +9,12 @@ import android.util.Log
 
 object BitmapUtils {
 
+    enum class TYPE_IMAGE_CONVERSION(val option: Int){
+        NO_CONVERSION(0),
+        GRAY_SCALE(1),
+        HISTOGRAM_EQUALIZATION(2)
+    }
+
     private const val TAG = "SCAN_OCR"
 
     private fun applyHistogramEqualization(grayscaleBitmap: Bitmap): Bitmap {
@@ -94,10 +100,14 @@ object BitmapUtils {
     }
 
     fun optimizeBitImage(step: Int, bitmap: Bitmap): Bitmap {
+        Log.d(TAG, "option $step")
         return when (step) {
-            0 -> bitmap //no conversion
-            1 -> applyGrayScale(bitmap) // only grayscale
-            2 -> applyHistogramEqualization(applyGrayScale(bitmap))
+            TYPE_IMAGE_CONVERSION.NO_CONVERSION.option -> {
+                Log.d(TAG, "returning without conversion")
+                bitmap
+            }
+            TYPE_IMAGE_CONVERSION.GRAY_SCALE.option -> applyGrayScale(bitmap) // only grayscale
+            TYPE_IMAGE_CONVERSION.HISTOGRAM_EQUALIZATION.option -> applyHistogramEqualization(applyGrayScale(bitmap))
             else -> bitmap
         }
     }

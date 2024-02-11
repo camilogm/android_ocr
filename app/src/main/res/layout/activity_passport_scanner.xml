@@ -14,25 +14,34 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
             <Spinner
                 android:id="@+id/scanOptions"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:entries="@array/scanner_options" />
+                android:layout_height="wrap_content"
+                android:entries="@array/scanner_options"
+                android:layout_marginBottom="10dp" />
+
+            <Spinner
+                android:id="@+id/stepSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"/>
 
             <Button
                 android:id="@+id/scanPassportButton"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:text="Scan " />
+                android:layout_height="wrap_content"
+                android:text="Scan "
+                android:layout_marginBottom="10dp" />
 
             <Button
                 android:id="@+id/uploadImageButton"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:text="Upload Image" />
+                android:layout_height="wrap_content"
+                android:text="Upload Image"
+                android:layout_marginBottom="10dp" />
         </LinearLayout>
 
         <TextView
@@ -41,15 +50,15 @@
             android:layout_height="200dp"
             android:padding="16dp"
             android:textSize="18sp" />
+
     </LinearLayout>
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_marginTop="50dp"
         android:layout_width="400dp"
         android:layout_height="350dp"
         android:layout_centerInParent="true"
-     />
+        android:layout_marginTop="50dp" />
 
 
 </LinearLayout>

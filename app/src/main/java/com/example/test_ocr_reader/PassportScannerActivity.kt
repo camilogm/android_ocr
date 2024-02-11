@@ -5,13 +5,13 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.ComponentActivity
@@ -55,6 +55,7 @@ class PassportScannerActivity : ComponentActivity() {
     private lateinit var scannedTextView: TextView
 
     private var selectedSpinnerItem: String? = null
+    private var selectedImageConversion: Int? = null
     private lateinit var takePictureLauncher: ActivityResultLauncher<Intent>
 
 
@@ -78,8 +79,8 @@ class PassportScannerActivity : ComponentActivity() {
         imageView = findViewById(R.id.imageView)
 
 
-        setupSpinner()
-
+        setupDocumentSpinner()
+        setUpImageConversionSpinner()
         // Initialize ActivityResultLauncher
         takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -99,7 +100,23 @@ class PassportScannerActivity : ComponentActivity() {
         }
     }
 
-    private fun setupSpinner() {
+    private fun setUpImageConversionSpinner(){
+        val stepSpinner: Spinner = findViewById(R.id.stepSpinner)
+        val options = listOf("No Conversion", "Grayscale", "Histogram Equalization")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, options)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        stepSpinner.adapter = adapter
+
+        stepSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                selectedImageConversion = position
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {
+            }
+        }
+    }
+
+    private fun setupDocumentSpinner() {
         val spinner = findViewById<Spinner>(R.id.scanOptions)
         val options = resources.getStringArray(R.array.scanner_options)
 
@@ -145,8 +162,6 @@ class PassportScannerActivity : ComponentActivity() {
         pickImageLauncher.launch("image/*")
     }
 
-
-
     private suspend fun performTextRecognition(firebaseVisionImage: FirebaseVisionImage): FirebaseVisionText {
         return withContext(Dispatchers.IO) {
             FirebaseVisionCloudTextRecognizerOptions.Builder()
@@ -163,7 +178,8 @@ class PassportScannerActivity : ComponentActivity() {
     }
 
     private suspend fun processImage(bitmap: Bitmap) {
-        val optimizedGrayScale = BitmapUtils.optimizeBitImage(2 , bitmap)
+        val step = selectedImageConversion ?: 0
+        val optimizedGrayScale = BitmapUtils.optimizeBitImage(step, bitmap)
 
         imageView.setImageBitmap(optimizedGrayScale)
         val firebaseVisionImage = FirebaseVisionImage.fromBitmap(optimizedGrayScale)

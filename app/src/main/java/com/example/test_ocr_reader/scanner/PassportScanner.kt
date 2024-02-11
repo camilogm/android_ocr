@@ -7,10 +7,6 @@ import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 
 class PassportScanner {
-
-
-
-
     companion object {
         private const val TAG = "SCAN_OCR"
         private const val PASSPORT_TD_3_LINE_2_REGEX =
