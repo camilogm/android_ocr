@@ -1,63 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:padding="16dp">
 
-
+    <!-- Your existing views -->
     <LinearLayout
+        android:id="@+id/contentLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_margin="20dp">
+        android:elevation="2dp"
+        android:background="?android:attr/selectableItemBackground">
 
-        <LinearLayout
+        <Spinner
+            android:id="@+id/scanOptions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginBottom="16dp" />
 
-            <Spinner
-                android:id="@+id/scanOptions"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp" />
+        <Spinner
+            android:id="@+id/stepSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
 
-            <Spinner
-                android:id="@+id/stepSpinner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="10dp"/>
+        <Button
+            android:id="@+id/scanPassportButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scan"
+            android:layout_marginBottom="16dp" />
 
-            <Button
-                android:id="@+id/scanPassportButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Scan "
-                android:layout_marginBottom="10dp" />
-
-            <Button
-                android:id="@+id/uploadImageButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Upload Image"
-                android:layout_marginBottom="10dp" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/scannedTextView"
-            android:layout_width="255dp"
-            android:layout_height="200dp"
-            android:padding="16dp"
-            android:textSize="18sp" />
+        <Button
+            android:id="@+id/uploadImageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Upload Image"
+            android:layout_marginBottom="16dp" />
 
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="400dp"
-        android:layout_height="350dp"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="50dp" />
+    <!-- Image and Text View container -->
+    <RelativeLayout
+        android:id="@+id/imageContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
+        <!-- ImageView -->
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="400dp"
+            android:layout_height="350dp"
+            android:layout_centerInParent="true" />
 
-</LinearLayout>
+        <!-- TextView -->
+        <TextView
+            android:id="@+id/scannedTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/imageView"
+            android:padding="16dp"
+            android:textSize="18sp" />
+    </RelativeLayout>
+
+</FrameLayout>

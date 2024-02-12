@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -22,6 +23,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage
 import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions
 import com.google.firebase.ml.vision.text.FirebaseVisionText
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.Spinner
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -58,6 +60,7 @@ class PassportScannerActivity : ComponentActivity() {
     private lateinit var uploadImageButton: Button
     private lateinit var imageView: ImageView
     private lateinit var scannedTextView: TextView
+    private lateinit var imageContainer: RelativeLayout
 
     private var selectedTravelDocument: Int? = null
     private var selectedImageConversion: Int? = null
@@ -82,7 +85,7 @@ class PassportScannerActivity : ComponentActivity() {
 
         scannedTextView = findViewById(R.id.scannedTextView)
         imageView = findViewById(R.id.imageView)
-
+        imageContainer = findViewById(R.id.imageContainer)
 
         setupDocumentSpinner()
         setUpImageConversionSpinner()
@@ -178,6 +181,7 @@ class PassportScannerActivity : ComponentActivity() {
     }
 
     private suspend fun performTextRecognition(firebaseVisionImage: FirebaseVisionImage): FirebaseVisionText {
+        hideResult()
         return withContext(Dispatchers.IO) {
             FirebaseVisionCloudTextRecognizerOptions.Builder()
                 .setLanguageHints(listOf("es"))
@@ -190,8 +194,15 @@ class PassportScannerActivity : ComponentActivity() {
     }
     private fun updatePassportTextView(documentData: String) {
         scannedTextView.text =  documentData.toString();
+        imageContainer.visibility = View.VISIBLE
+        val animation = AnimationUtils.loadAnimation(applicationContext, R.anim.slide_up)
+        imageContainer.startAnimation(animation)
     }
 
+    private fun hideResult(){
+        scannedTextView.text = ""
+        imageContainer.visibility = View.GONE
+    }
     private suspend fun processImage(bitmap: Bitmap) {
         val step = selectedImageConversion ?: 0
         val optimizedGrayScale = BitmapUtils.optimizeBitImage(step, bitmap)
