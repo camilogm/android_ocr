@@ -1,5 +1,6 @@
 package com.example.test_ocr_reader.model
 
+import java.text.SimpleDateFormat
 import java.util.Date
 
 data class Passport(
@@ -7,8 +8,18 @@ data class Passport(
     val dateOfBirthDay: Date,
     val expiryDate: Date,
     val expeditionCountry: String,
+    val givenName: String = "",
+    val surName: String = ""
 ){
+
     override fun toString(): String {
-        return "Passport: { Document Number: $documentNumber, Date of Birth: $dateOfBirthDay, Expiry Date: $expiryDate }, country ${expeditionCountry}"
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+        return "TravelDocument(" +
+                "documentNumber='$documentNumber', " +
+                "dateOfBirthDay=${dateFormat.format(dateOfBirthDay)}, " +
+                "expiryDate=${dateFormat.format(expiryDate)}, " +
+                "expeditionCountry='$expeditionCountry', " +
+                "givenName='$givenName', " +
+                "surName='$surName')"
     }
 }

@@ -26,6 +26,7 @@ import android.widget.Spinner
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import com.example.test_ocr_reader.scanner.AmericanVisaExtract
 import com.example.test_ocr_reader.scanner.BitmapUtils
 import com.example.test_ocr_reader.scanner.CreditCardScanner
 import com.example.test_ocr_reader.scanner.PassportScanner
@@ -43,9 +44,12 @@ class PassportScannerActivity : ComponentActivity() {
         private const val PICK_IMAGE_REQUEST = 1
     }
 
-    enum class SCAN_TYPES(val scanType: String) {
-        PASSPORT("Passport"),
-        CREDIT_CARD("Credit Card")
+    enum class SCAN_TYPES(val scanType: Int) {
+        PASSPORT(0),
+        VISA_ICAO(1),
+        VISA_ANOTHER_PATTERN(2),
+        CREDIT_CARD(3),
+        INE(4)
 
     }
 
@@ -54,7 +58,7 @@ class PassportScannerActivity : ComponentActivity() {
     private lateinit var imageView: ImageView
     private lateinit var scannedTextView: TextView
 
-    private var selectedSpinnerItem: String? = null
+    private var selectedTravelDocument: Int? = null
     private var selectedImageConversion: Int? = null
     private lateinit var takePictureLauncher: ActivityResultLauncher<Intent>
 
@@ -118,11 +122,21 @@ class PassportScannerActivity : ComponentActivity() {
 
     private fun setupDocumentSpinner() {
         val spinner = findViewById<Spinner>(R.id.scanOptions)
-        val options = resources.getStringArray(R.array.scanner_options)
+        val scannerOptions = arrayOf(
+            "Passport",
+            "VISA ICAO closer pattern",
+            "VISA another Pattern",
+            "Credit Card",
+            "INE"
+        )
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, scannerOptions)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
 
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedSpinnerItem = options[position]
+                selectedTravelDocument = position
                 scannedTextView.text = ""
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -173,8 +187,8 @@ class PassportScannerActivity : ComponentActivity() {
             result
         }
     }
-    private fun updatePassportTextView(passport: String) {
-        scannedTextView.text =  passport.toString();
+    private fun updatePassportTextView(documentData: String) {
+        scannedTextView.text =  documentData.toString();
     }
 
     private suspend fun processImage(bitmap: Bitmap) {
@@ -185,11 +199,13 @@ class PassportScannerActivity : ComponentActivity() {
         val firebaseVisionImage = FirebaseVisionImage.fromBitmap(optimizedGrayScale)
         val visionText = performTextRecognition(firebaseVisionImage)
 
-        Log.d(TAG, "scanning $selectedSpinnerItem")
+        Log.d(TAG, "scanning $selectedTravelDocument")
 
-        val result = when  {
-            selectedSpinnerItem == SCAN_TYPES.PASSPORT.scanType -> PassportScanner().processMrz(visionText)
-            selectedSpinnerItem == SCAN_TYPES.CREDIT_CARD.scanType -> CreditCardScanner().processCreditCards(visionText)
+        val result = when(selectedTravelDocument)  {
+            SCAN_TYPES.PASSPORT.scanType -> PassportScanner().processMrz(visionText,PassportScanner.TravelDocumentType.PASSPORT_TD_3 )
+            SCAN_TYPES.CREDIT_CARD.scanType -> CreditCardScanner().processCreditCards(visionText)
+            SCAN_TYPES.VISA_ANOTHER_PATTERN.scanType -> PassportScanner().processMrz(visionText, PassportScanner.TravelDocumentType.VISA_ANOTHER_PATTERN)
+            SCAN_TYPES.VISA_ICAO.scanType -> AmericanVisaExtract().processMrz(visionText)
             else -> "x and y are incomparable"
         }
 
