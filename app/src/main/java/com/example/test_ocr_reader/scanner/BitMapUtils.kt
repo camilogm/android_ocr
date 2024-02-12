@@ -5,7 +5,11 @@ import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import android.os.Environment
 import android.util.Log
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 
 object BitmapUtils {
 

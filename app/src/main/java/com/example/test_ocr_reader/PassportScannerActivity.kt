@@ -1,6 +1,5 @@
 package com.example.test_ocr_reader
 
-
 import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
@@ -14,30 +13,34 @@ import android.view.animation.AnimationUtils
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.TextView
-import androidx.activity.ComponentActivity
-import com.google.firebase.Firebase
-import com.google.firebase.initialize
-import com.google.firebase.ml.vision.FirebaseVision
-import com.google.firebase.ml.vision.common.FirebaseVisionImage
-import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions
-import com.google.firebase.ml.vision.text.FirebaseVisionText
 import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.Spinner
+import android.widget.TextView
+import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.test_ocr_reader.scanner.AmericanVisaExtract
 import com.example.test_ocr_reader.scanner.BitmapUtils
 import com.example.test_ocr_reader.scanner.CreditCardScanner
 import com.example.test_ocr_reader.scanner.PassportScanner
 import com.example.test_ocr_reader.scanner.ResidentCard
+import com.google.firebase.Firebase
+import com.google.firebase.initialize
+import com.google.firebase.ml.vision.FirebaseVision
+import com.google.firebase.ml.vision.common.FirebaseVisionImage
+import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions
+import com.google.firebase.ml.vision.text.FirebaseVisionText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import java.lang.Exception
+import java.io.File
+import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class PassportScannerActivity : ComponentActivity() {
 
@@ -52,8 +55,7 @@ class PassportScannerActivity : ComponentActivity() {
         VISA_ICAO(1),
         VISA_ANOTHER_PATTERN(2),
         CREDIT_CARD(3),
-        RESIDENT_CARD(4)
-
+        RESIDENT_CARD(4),
     }
 
     private lateinit var scanPassportButton: Button
@@ -66,10 +68,11 @@ class PassportScannerActivity : ComponentActivity() {
     private var selectedImageConversion: Int? = null
     private lateinit var takePictureLauncher: ActivityResultLauncher<Intent>
 
+    lateinit var currentPhotoPath: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Firebase.initialize( this)
+        Firebase.initialize(this)
 
         setContentView(R.layout.activity_passport_scanner)
 
@@ -92,23 +95,20 @@ class PassportScannerActivity : ComponentActivity() {
         // Initialize ActivityResultLauncher
         takePictureLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                result.data?.extras?.get("data")?.let { image ->
-                    if (image is Bitmap) {
-                        lifecycleScope.launch {
-                            try {
-                                processImage(image)
-                            } catch (e: Exception) {
-                                Log.e(TAG, e.toString())
-                            }
-                        }
+                lifecycleScope.launch {
+                    try {
+                        val file = File(currentPhotoPath)
+                        val bitmap = getBitmapFromUri(Uri.fromFile(file))
+                        processImage(bitmap)
+                    } catch (e: Exception) {
+                        Log.e(TAG, e.toString())
                     }
                 }
-            } else {
             }
         }
     }
 
-    private fun setUpImageConversionSpinner(){
+    private fun setUpImageConversionSpinner() {
         val stepSpinner: Spinner = findViewById(R.id.stepSpinner)
         val options = listOf("No Conversion", "Grayscale", "Histogram Equalization")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, options)
@@ -119,6 +119,7 @@ class PassportScannerActivity : ComponentActivity() {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 selectedImageConversion = position
             }
+
             override fun onNothingSelected(parent: AdapterView<*>) {
             }
         }
@@ -131,7 +132,7 @@ class PassportScannerActivity : ComponentActivity() {
             "VISA ICAO closer pattern",
             "VISA another Pattern",
             "Credit Card",
-            "Resident card"
+            "Resident card",
         )
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, scannerOptions)
@@ -143,6 +144,7 @@ class PassportScannerActivity : ComponentActivity() {
                 selectedTravelDocument = position
                 scannedTextView.text = ""
             }
+
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
         }
@@ -153,13 +155,44 @@ class PassportScannerActivity : ComponentActivity() {
         val inputStream = contentResolver.openInputStream(uri)
         BitmapFactory.decodeStream(inputStream)
     }
+
     private fun dispatchTakePictureIntent() {
-        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        takePictureIntent.resolveActivity(packageManager)?.let {
-            takePictureLauncher.launch(takePictureIntent)
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
+            // Ensure that there's a camera activity to handle the intent
+            takePictureIntent.resolveActivity(packageManager)?.also {
+                // Create the File where the photo should go
+                val photoFile: File? = try {
+                    createImageFile()
+                } catch (ex: IOException) {
+                    // Error occurred while creating the File
+                    null
+                }
+                // Continue only if the File was successfully created
+                photoFile?.also {
+                    val photoURI: Uri = FileProvider.getUriForFile(
+                        application,
+                        "${application.packageName}.provider",
+                        it,
+                    )
+                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                    takePictureLauncher.launch(takePictureIntent)
+                }
+            }
         }
     }
 
+    fun createImageFile(): File {
+        // Create an image file name
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
+        return File.createTempFile(
+            "JPEG_${timeStamp}_", /* prefix */
+            ".jpg", /* suffix */
+            application.cacheDir, /* directory */
+        ).apply {
+            // Save a file: path for use with ACTION_VIEW intents
+            currentPhotoPath = absolutePath
+        }
+    }
 
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { selectedImageUri ->
@@ -192,17 +225,19 @@ class PassportScannerActivity : ComponentActivity() {
             result
         }
     }
+
     private fun updatePassportTextView(documentData: String) {
-        scannedTextView.text =  documentData.toString();
+        scannedTextView.text = documentData.toString()
         imageContainer.visibility = View.VISIBLE
         val animation = AnimationUtils.loadAnimation(applicationContext, R.anim.slide_up)
         imageContainer.startAnimation(animation)
     }
 
-    private fun hideResult(){
+    private fun hideResult() {
         scannedTextView.text = ""
         imageContainer.visibility = View.GONE
     }
+
     private suspend fun processImage(bitmap: Bitmap) {
         val step = selectedImageConversion ?: 0
         val optimizedGrayScale = BitmapUtils.optimizeBitImage(step, bitmap)
@@ -213,17 +248,21 @@ class PassportScannerActivity : ComponentActivity() {
 
         Log.d(TAG, "scanning $selectedTravelDocument")
 
-        val result = when(selectedTravelDocument)  {
-            SCAN_TYPES.PASSPORT.scanType -> PassportScanner().processMrz(visionText,PassportScanner.TravelDocumentType.PASSPORT_TD_3 )
+        val result = when (selectedTravelDocument) {
+            SCAN_TYPES.PASSPORT.scanType -> PassportScanner().processMrz(
+                visionText,
+                PassportScanner.TravelDocumentType.PASSPORT_TD_3,
+            )
             SCAN_TYPES.CREDIT_CARD.scanType -> CreditCardScanner().processCreditCards(visionText)
-            SCAN_TYPES.VISA_ANOTHER_PATTERN.scanType -> PassportScanner().processMrz(visionText, PassportScanner.TravelDocumentType.VISA_ANOTHER_PATTERN)
+            SCAN_TYPES.VISA_ANOTHER_PATTERN.scanType -> PassportScanner().processMrz(
+                visionText,
+                PassportScanner.TravelDocumentType.VISA_ANOTHER_PATTERN,
+            )
             SCAN_TYPES.VISA_ICAO.scanType -> AmericanVisaExtract().processMrz(visionText)
             SCAN_TYPES.RESIDENT_CARD.scanType -> ResidentCard().processMrz(visionText)
             else -> "x and y are incomparable"
         }
 
         updatePassportTextView(result.toString())
-
     }
-
 }
