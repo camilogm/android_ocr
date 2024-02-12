@@ -10,21 +10,35 @@ import java.util.regex.Pattern
 
 class PassportScanner {
 
+    /**
+     * TODO: fix this implementation to better overloading availability
+     * TODO: move it to its own file
+     */
     enum class TravelDocumentType(
         val line1Regex: String,
-        val line2Regex: String
+        val line2Regex: String,
+        val line3Regex: String
     ) {
         PASSPORT_TD_3(
             "(P[A-Z0-9<]{1})([A-Z]{3})([A-Z0-9<]{39})",
-            "([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9<]{1})([0-9]{1})"
+            "([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})([A-Z0-9<]{14})([0-9<]{1})([0-9]{1})",
+            ""
         ),
         VISA_ANOTHER_PATTERN(
             "(V[A-Z0-9<]{1})([A-Z]{3})([A-Z0-9<]{31,})",
-            "([A-Z0-9<]{9})([0-9]{1})([A-Z]{3})([0-9]{6})([0-9]{1})([M|F|X|<]{1})([0-9]{6})([0-9]{1})(<+)"
+            "\"([A-Z0-9<]{10})([A-Z]{3})(\\\\d{2})(\\\\d{2})(\\\\d{2})(\\\\d{1})([MF])(\\\\d{2})(\\\\d{2})(\\\\d{2})",
+            ""
         ),
         VISA_ICAO_PATTERN(
             "VN([A-Z]{3})([A-Z]+)<<([A-Z]+)<<*",
-            "^([A-Z0-9<]{31})\$"
+            "^([A-Z0-9<]{31})\$",
+            ""
+        ),
+        RESIDENT_CARD(
+            "([1I])<([A-Z0-9<]{3})([0-9]{8})",
+            "(<+)(\\d{2})(\\d{2})(\\d{2})(\\d{1})[MFX]",
+            "(<+)([A-Z0-9]+)(<<)([A-Z]+)<+"
+
         )
     }
     companion object {

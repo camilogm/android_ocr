@@ -34,9 +34,8 @@ class AmericanVisaExtract {
             val surname = groupValues?.getOrNull(2)
             val givenName = groupValues?.getOrNull(3)
 
-            val newDocument = passport.copy(expeditionCountry = expeditionCountry, surName = surname ?: "", givenName = givenName ?: "")
+            passport.copy(expeditionCountry = expeditionCountry, surName = surname ?: "", givenName = givenName ?: "")
 
-            return processMrzLineTwo(travelDocumentLine, newDocument)
         } else {
             Log.d(TAG, "the document was labeled as empty")
             passport
@@ -46,7 +45,7 @@ class AmericanVisaExtract {
     private fun processMrzLineTwo(travelDocumentLine: String, passport: Passport): Passport {
         val dateFormat = SimpleDateFormat("yyMMdd")
 
-        val regexVisa = Regex("([A-Z0-9<]{10})([A-Z]{3})(\\d{2})(\\d{2})(\\d{2})(\\d{1})([MF])(\\d{2})(\\d{2})(\\d{2})")
+        val regexVisa = Regex(PassportScanner.TravelDocumentType.VISA_ICAO_PATTERN.line2Regex)
         val matchResult = regexVisa.find(travelDocumentLine)
         Log.d(TAG, "evaluate in second: $travelDocumentLine , result: ${matchResult != null}")
 

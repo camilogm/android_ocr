@@ -30,6 +30,7 @@ import com.example.test_ocr_reader.scanner.AmericanVisaExtract
 import com.example.test_ocr_reader.scanner.BitmapUtils
 import com.example.test_ocr_reader.scanner.CreditCardScanner
 import com.example.test_ocr_reader.scanner.PassportScanner
+import com.example.test_ocr_reader.scanner.ResidentCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -49,7 +50,7 @@ class PassportScannerActivity : ComponentActivity() {
         VISA_ICAO(1),
         VISA_ANOTHER_PATTERN(2),
         CREDIT_CARD(3),
-        INE(4)
+        RESIDENT_CARD(4)
 
     }
 
@@ -127,7 +128,7 @@ class PassportScannerActivity : ComponentActivity() {
             "VISA ICAO closer pattern",
             "VISA another Pattern",
             "Credit Card",
-            "INE"
+            "Resident card"
         )
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, scannerOptions)
@@ -206,6 +207,7 @@ class PassportScannerActivity : ComponentActivity() {
             SCAN_TYPES.CREDIT_CARD.scanType -> CreditCardScanner().processCreditCards(visionText)
             SCAN_TYPES.VISA_ANOTHER_PATTERN.scanType -> PassportScanner().processMrz(visionText, PassportScanner.TravelDocumentType.VISA_ANOTHER_PATTERN)
             SCAN_TYPES.VISA_ICAO.scanType -> AmericanVisaExtract().processMrz(visionText)
+            SCAN_TYPES.RESIDENT_CARD.scanType -> ResidentCard().processMrz(visionText)
             else -> "x and y are incomparable"
         }
 
